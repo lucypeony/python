@@ -5,15 +5,34 @@ df = pd.read_excel(fileName,header=1)
 print('opening file ....')
 #print(df.head)
 
-x=df[['姓名','班级','语文','数学','英语','物理','Unnamed: 7','Unnamed: 13','Unnamed: 19','Unnamed: 25','总分','Unnamed: 55']]
-x=x.rename(columns={'Unnamed: 7':'语文校次','Unnamed: 13':'数学校次','Unnamed: 19':'英语校次','Unnamed: 25':'物理校次','Unnamed: 55':'总分校次'})
-x=x.drop(index=0)
+y=df[['姓名','班级','语文','数学','英语','物理','Unnamed: 7','Unnamed: 13','Unnamed: 19','Unnamed: 25','总分','Unnamed: 55']]
+y=y.rename(columns={'Unnamed: 7':'语文校次','Unnamed: 13':'数学校次','Unnamed: 19':'英语校次','Unnamed: 25':'物理校次','Unnamed: 55':'总分校次'})
+y=y.drop(index=0)
 #temp1: to_excel
 
 
 #TEMOPRARY
-#x.to_excel('test1.xlsx',index=False)
+#y.to_excel('test1.xlsx',index=False)
+#在这里，在test1.xlsx的基础上，处理掉非数字数值，手动
+#保存在test2.xlsx
+fileName2='test2.xlsx'
+x=pd.read_excel(fileName2)
 
+'''
+在这里，计算语文、数学、英语和物理四科总分，并替换总分
+然后按照总分，进行排序，并用新的顺序来替换掉原来的index
+
+'''
+sike = x['语文']+x['数学']+x['英语']+x['物理']
+x['总分']=sike
+#计算总分排名
+#按照总分，重新排序
+x=x.sort_values('总分',ascending=False)
+x=x.reset_index()
+x=x[x.columns[1:]]
+s=list(x.index)
+s=pd.Series(s)+1
+x['总分校次']=s
 
 
 
@@ -100,25 +119,44 @@ kemu:Series 保存某个班级某个科目的分数，用来计算平均分
 dengji:Series 保存某个班级某个科目的校次，用来统计ABCDE等级
 
 '''
+frames=[]  #用来存储要concentate 的表格banjidata
+frames_keys=[]    #用来存储班级 
+
 xcolumns=x.columns
 xg=x.groupby(xcolumns[1])
 for banji, banjidf in xg:
-    kumulist=['语文','数学','英语','物理','总分']
-    for k in kumulist:
+    banjidata=pd.DataFrame() 
+    kemulist=['语文','数学','英语','物理','总分']
+    banji_pjf=pd.Series(index=kemulist) #保存每个班级的四个科目和总分 的平均分
+    banji_pjf.name=banji
+    for k in kemulist:
         kemu=banjidf[k]
-        print(banji,kemu.name,pingjunfen(kemu))
+        #print(banji,kemu.name,pingjunfen(kemu))
+        banji_pjf[kemu.name]=pingjunfen(kemu)
+    banjidata['平均分']=banji_pjf
+    #print(banjidata.transpose())
+    banjidata=banjidata.transpose()
 
     dengjilist=['语文校次','数学校次','英语校次','物理校次','总分校次']
+    banji_dj = pd.DataFrame()
     for d in dengjilist:
         dengji=banjidf[d]
-        print(banji,d,dengji_cal(dengji))
-        
-    
-       
+        #print(banji,d,dengji_cal(dengji))
+        dd= pd.Series(index=['A','B','C','D','E']) #用来保存每个科目的A,B,C,D,E等级数目
+        dd=dengji_cal(dengji)
+        dd.name=d[0:2]
+        banji_dj[dd.name]=dd
+    #print(banji_dj)
+    banjidata=banjidata.append(banji_dj)
+    frames_keys.append(banji)
+    frames.append(banjidata)
+    print(banji,banjidata)
+    #banjidata.to_excel(banji+'.xlsx')
 
-#计算等级
 '''
+导出数据
+concentate的时候，保持数据来源DataFrame作为FirstLevel的index
 
 '''
-
-#输出文件
+framesdf=pd.concat(frames,keys=frames_keys)
+framesdf.to_excel('test3.xlsx')
