@@ -34,7 +34,7 @@ s=list(x.index)
 s=pd.Series(s)+1
 x['总分校次']=s
 
-
+#print(x.mean())
 
 '''
 输入：一个值
@@ -148,9 +148,68 @@ for banji, banjidf in xg:
         banji_dj[dd.name]=dd
     #print(banji_dj)
     banjidata=banjidata.append(banji_dj)
+
+    '''
+        准备上次考试数据放置的rows
+    '''
+    fenxilist=['八上月考一(100)','八上月考一A等级','月考一期中分差','月考一期中提高率','月考一期中年级提高率差','授课教师']
+    fenxidf=pd.DataFrame()
+    for fenxi in fenxilist:
+        f=pd.Series(index=kemulist)
+        fenxidf[fenxi]=f
+
+
+
+    '''
+    打开上次考试的数据
+    最外层的班级： banji
+    上次考试文件来源：期中成绩分析.xlsx
+    导入八上月考的平均分和A等级人数
+        
+    '''
+    shangciFile='期中成绩分析.xlsx'
+    shangcidf=pd.read_excel(shangciFile)
+    shangcidfg=shangcidfg=shangcidf.groupby('班级')
+    for scbanji,scbanjidf in shangcidfg:
+        #判断banji 是否和scbanji 一致
+        if(banji[3:]==scbanji):
+            scindex=scbanjidf.index
+            #print(scbanjidf)
+            #print(scindex)
+            #print(scindex[0])
+            y100=scbanjidf.loc[scindex[5],:] #八上月考一100分
+            yA=scbanjidf.loc[scindex[7],:]   #八上月考一A等级
+            y100=y100[1::]
+            yA=yA[1::]
+            fenxidf[fenxilist[0]]=y100
+            fenxidf[fenxilist[1]]=yA
+
+    fenxidf=fenxidf.transpose()
+    banjidata=banjidata.append(fenxidf)
+
+    '''
+    计算分差和提高率
+    分差：平均分 - 八上月考一100分
+    提高率： 分差 除以 八上月考一100分
+
+    '''
+    #print(banjidata.index)
+    #print(banjidata.loc['平均分'])
+    bindex=banjidata.index
+    fencha=banjidata.loc[bindex[0]] - banjidata.loc[bindex[6]]
+    #print(fencha)
+    banjidata.loc[bindex[8]]=fencha
+    tigaolv=banjidata.loc[bindex[8]] / banjidata.loc[bindex[6]]
+    banjidata.loc[bindex[9]]=tigaolv
+   
+            
+    
+    '''
+    用于准备导出数据
+    '''
     frames_keys.append(banji)
     frames.append(banjidata)
-    print(banji,banjidata)
+    #print(banji,banjidata)
     #banjidata.to_excel(banji+'.xlsx')
 
 '''
