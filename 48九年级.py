@@ -168,7 +168,7 @@ for banji, banjidf in xg:
     '''
         准备上次考试数据放置的rows
     '''
-    fenxilist=['开学考(100)','开学考A等级','开学考期中分差','开学考期中提高率','开学考期中年级提高率差','授课教师']
+    fenxilist=['八下期末(100)','八下期末A等级','八下期末期中分差','八下期末期中提高率','开学考期中年级提高率差','授课教师']
     fenxidf=pd.DataFrame()
     for fenxi in fenxilist:
         f=pd.Series(index=kemulist)
@@ -184,7 +184,7 @@ for banji, banjidf in xg:
         
     '''
     shangciFile='九年级各阶段考试成绩.xlsx'
-    shangcidf=pd.read_excel(shangciFile,sheet_name='9年级开学考')
+    shangcidf=pd.read_excel(shangciFile,sheet_name='8年级第二学期期末')
     #print(shangcidf.mean())
     shangci_ROWS,shangci_COLUMNS=shangcidf.shape
     Adengji =pd.Series(kemulist)
@@ -197,7 +197,7 @@ for banji, banjidf in xg:
     shangcidfg=shangcidfg=shangcidf.groupby('班级')
     for scbanji,scbanjidf in shangcidfg:
         #判断banji 是否和scbanji 一致
-        if(banji==scbanji):
+        if(banji[3:-1]==scbanji[2:-1]):
             scindex=scbanjidf.index
             #print(scbanjidf)
             #print(scindex)
@@ -218,6 +218,26 @@ for banji, banjidf in xg:
             #yA=scbanjidf.loc[scindex[7],:]   #A等级
             #yA=yA[1::]
             fenxidf[fenxilist[1]]=yA
+
+
+            '''
+                获得每个班级的授课教师
+                文件来源：'2019课任安排.xls'
+                sheet_name:'九年级'
+            '''
+            teachersFile='2019课任安排.xls'
+            teachers_df = pd.read_excel(teachersFile,sheet_name='九年级')
+            teachers_df.index=teachers_df['班级']
+            teachers_temp=teachers_df.loc['九（'+banji[3:-1]+'）',]
+            teachers_series=pd.Series(index=kemulist)
+            teachers_series[kemulist[0]]=teachers_temp['语文']
+            teachers_series[kemulist[1]]=teachers_temp['数学']
+            teachers_series[kemulist[2]]=teachers_temp['英语']
+            teachers_series[kemulist[3]]=teachers_temp['物理']
+            teachers_series[kemulist[4]]=teachers_temp['班主任']
+            
+            fenxidf[fenxilist[5]]=teachers_series
+            
 
     fenxidf=fenxidf.transpose()
     banjidata=banjidata.append(fenxidf)
@@ -248,6 +268,26 @@ for banji, banjidf in xg:
     #print(nianjitigaolv)
     banjidata.loc[bindex[10]]=tigaolv-nianjitigaolv
 
+
+
+    
+    '''
+    图像plot
+
+    TODO:不识别汉字啊
+    
+    print(banjidata.shape)
+    import matplotlib.pyplot as plt
+    testdf=pd.DataFrame()
+    testdf=banjidata[::-1]
+    #print(testdf)
+    testdf.plot()
+    plt.show()
+    '''
+
+
+
+    
     
     '''
     用于准备导出数据
