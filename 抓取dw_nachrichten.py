@@ -1,20 +1,66 @@
-myURL='https://www.dw.com/de/media-center/deutschkurse/s-100816?filter=&type=17&programs=17269854&sort=date&results=36'
+myURL ='https://www.dw.com/de/deutsch-lernen/nachrichten/s-8030'
 
 import pandas as pd 
 import numpy as np 
 import matplotlib.pyplot as plt
-#import seaborn as sns  #what is it : a library for making statistical graphics. built on top of matplotlib and closely integrated with pandas 
-#%matplotlib inline 
-
-#from urllib.requests import urlopen #to open urls 
 import requests
-from bs4 import BeautifulSoup # to extract data from html files 
+from bs4 import BeautifulSoup # to extract data from html files
+from docx import Document
+
+
+def save_mp3(audio_link):
+    mp3_html=requests.get(audio_link).content
+    mp3_soup=BeautifulSoup(mp3_html,'html.parser')
+    mp3_name=mp3_soup.h1.text
+    mp3_href=mp3_soup.find('a',{'target':'hiddenDownloadIframe'})['href']
+
+    temp_name=mp3_name[38:45]
+    if(temp_name !='langsam'):
+        temp_name='original'
+    mp3_name=mp3_name[31:35]+mp3_name[28:30]+mp3_name[25:27]+" "+temp_name+'.mp3'
+
+    mp3_file =requests.get(mp3_href)
+    with open(mp3_name,'wb') as f:
+        f.write(mp3_file.content)
+
 
 html=requests.get(myURL)
 html=html.content
 soup = BeautifulSoup(html,'html.parser')
 
-all_links = soup.find_all('a')
+
+base ='https://www.dw.com/'
+all_links = soup.find_all('a',{'class':'overlayLink'})
 for link in all_links:
-    print(link.get('href'))
-    
+    audio_link=base+link['href']   #get address for nachrichten audio
+    save_mp3(audio_link)
+print('已保存音频文件')
+
+'''
+get today news address link
+save dw nachrichten to doc file 
+'''
+my_div=soup.find_all('div',{'class':'news'})
+news_link=base+my_div[1].a['href']
+news_html=requests.get(news_link)
+news_html=news_html.content
+news_soup =BeautifulSoup(news_html,'html.parser')
+
+doc =Document()
+
+news_div = news_soup.find('div',{'class':'longText'})
+news_body = news_div.body
+para_text=""
+for news_p_text in news_body.find_all('p'):
+    if(news_p_text.strong!=None):       #if have strong text
+        para_text=news_p_text.strong.text
+        news_para=doc.add_paragraph("")
+        news_run=news_para.add_run(para_text)
+        news_run.bold=True
+    else:
+        para_text=news_p_text.text      #if not strong text
+        news_para=doc.add_paragraph(para_text)
+doc_name=news_link[23:31]
+doc_name=doc_name[-4:]+doc_name[2:4]+doc_name[:2]+'.docx'
+doc.save(doc_name)
+print('已保存word文档')
