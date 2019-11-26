@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import requests
 from bs4 import BeautifulSoup # to extract data from html files
 from docx import Document
+import re
 
 
 def save_mp3(audio_link):
@@ -14,15 +15,19 @@ def save_mp3(audio_link):
     mp3_name=mp3_soup.h1.text
     mp3_href=mp3_soup.find('a',{'target':'hiddenDownloadIframe'})['href']
 
-    temp_name=mp3_name[38:45]
+    temp_name=mp3_name[-26:-19]
     if(temp_name !='langsam'):
         temp_name='original'
-    mp3_name=mp3_name[31:35]+mp3_name[28:30]+mp3_name[25:27]+" "+temp_name+'.mp3'
+
+    name_list=re.findall(r'\b\d+\b',mp3_name)   
+    mp3_name=name_list[2]+name_list[1]+name_list[0]+" "+temp_name+'.mp3'
 
     mp3_file =requests.get(mp3_href)
     with open(mp3_name,'wb') as f:
         f.write(mp3_file.content)
+    
 
+    
 
 html=requests.get(myURL)
 html=html.content
@@ -49,9 +54,8 @@ news_soup =BeautifulSoup(news_html,'html.parser')
 doc =Document()
 
 news_div = news_soup.find('div',{'class':'longText'})
-news_body = news_div.body
 para_text=""
-for news_p_text in news_body.find_all('p'):
+for news_p_text in news_div.find_all('p'):
     if(news_p_text.strong!=None):       #if have strong text
         para_text=news_p_text.strong.text
         news_para=doc.add_paragraph("")
